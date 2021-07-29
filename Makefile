@@ -46,7 +46,7 @@ FSHASH=5c6fd51c115f4029926197095d436d527277c0e2
 FSVERSION=1.10.7
 ## Download these dependancies before building. They're
 ## mentioned in the spec file, so.. just do it!
-FSDEPS=v8-3.24.14.tar.bz2 mongo-c-driver-1.1.0.tar.gz pocketsphinx-0.8.tar.gz sphinxbase-0.8.tar.gz communicator_semi_6000_20080321.tar.gz libmemcached-0.32.tar.gz freeradius-client-1.1.7.tar.gz
+FSDEPS=pocketsphinx-0.8.tar.gz sphinxbase-0.8.tar.gz communicator_semi_6000_20080321.tar.gz freeradius-client-1.1.7.tar.gz
 
 ##
 ## If you're adding new RPMS, add them here (after adding a new section below)
