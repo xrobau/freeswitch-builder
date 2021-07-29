@@ -260,9 +260,6 @@ $(LIBSSDOCKERTAG): libssdocker/$(LIBKSRPM) $(wildcard libssdocker/*)
 	docker build --build-arg LIBKS=$(LIBKSRPM) --build-arg VERSION=$(VERSION) -t libssbuilder:$(VERSION) libssdocker
 	touch $(@)
 
-x:
-	echo $(LIBSSDEVELRPM)
-
 $(DOWNLOADS)/$(LIBSSFILENAME):
 	wget $(LIBSSURL) -O $(@)
 
