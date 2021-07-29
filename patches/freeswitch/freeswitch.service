@@ -1,0 +1,28 @@
+[Unit]
+Description=FreeSWITCH
+After=syslog.target network.target httpd.service
+
+[Service]
+Restart=always
+User=root
+EnvironmentFile=-/etc/sysconfig/freeswitch
+RuntimeDirectory=freeswitch
+RuntimeDirectoryMode=0777
+ExecStart=/usr/bin/freeswitch -nc -nf -nonat
+ExecReload=/usr/bin/kill -HUP $MAINPID
+LimitCORE=infinity
+LimitNOFILE=100000
+LimitNPROC=60000
+LimitSTACK=250000
+LimitRTPRIO=infinity
+LimitRTTIME=infinity
+IOSchedulingClass=realtime
+IOSchedulingPriority=2
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=89
+UMask=0007
+NoNewPrivileges=false
+
+[Install]
+WantedBy=multi-user.target
+

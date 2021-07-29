@@ -1,0 +1,12 @@
+--- a/bootstrap.sh.orig	2021-07-29 07:18:20.859115347 +1000
++++ a/bootstrap.sh	2021-07-29 07:18:54.699791665 +1000
+@@ -2,6 +2,9 @@
+ ##### -*- mode:shell-script; indent-tabs-mode:nil; sh-basic-offset:2 -*-
+ ##### bootstrap FreeSWITCH and FreeSWITCH libraries
+ 
++echo "Bootstrap already performed on source package. Skipping"
++exit 0
++
+ . $(dirname $0)/scripts/ci/build-requirements.sh
+ 
+ echo "bootstrap: checking installation..."
