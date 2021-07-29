@@ -27,13 +27,13 @@ sed -ri 's/Requires: openssl.+$/Requires: openssl11/' $SPECFILE
 # Replace the %setup line with a link to our derived directory
 sed -ri 's/^%setup.+/%setup -b0 -q -n %{extracted}/' $SPECFILE
 # And source0
-sed -ri 's/^Source0:.+$/Source0: '$SRC'/' $SPECFILE
+sed -ri 's/^Source0:.+$/Source0: '$(basename $SRC)'/' $SPECFILE
 
 # We already have run bootstrap, this does not need to be redone
 sed -ri 's/^(autoreconf.+)/# \1/' $SPECFILE
 
 # Parallel make
-sed -ri 's/^%\{__make}$/%make_build/' $SPECFILE
+#sed -ri 's/^%\{__make}$/%make_build/' $SPECFILE
 
 # Remove kazoo, mongo and signalwire
 sed -ri '/^%package (kazoo|application-mongo|event-cdr-mongo|application-signalwire)/,+8d' $SPECFILE

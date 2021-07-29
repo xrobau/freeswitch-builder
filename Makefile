@@ -1,10 +1,12 @@
-VERSION=20210728
+## If you change this version, make sure you
+## run 'make clean' to nuke all the old spec files.
+VERSION=20210729
 RELEASE=1
 CLANGVERS=12.0.0
 NPROCS=$(shell nproc)
 JOBS=$(shell echo $$(( $(NPROCS) * 2 )) )
 BUILDDIR=$(shell pwd)/build
-SOURCEDIR=$(shell pwd)/source
+DOWNLOADS=$(shell pwd)/downloads
 RPMSOURCE=$(BUILDDIR)/SOURCES
 
 RPMBASE=$(BUILDDIR)/RPMS/x86_64
@@ -15,7 +17,64 @@ CLANGFILE=clang+llvm-$(CLANGVERS)-x86_64-linux-gnu-centos7.tar.xz
 CLANGSRC=https://github.com/xrobau/centos7clang/releases/download/v12.0.0/$(CLANGFILE)
 CLANGDOCKERTAG=$(shell pwd)/.clang_docker_build
 
+##########
+## Things you may want to change
+##
+## Git hash for libstirshaken 
+##   https://github.com/signalwire/libstirshaken
 LIBSSHASH=8a12e1c750e86133564be69cfece9ccfe39deb52
+
+## Git hash for libkitchensink
+##   https://github.com/signalwire/libks
+LIBKSHASH=0b4a6e8181578ed9594cad536c11fb4e284a4849
+
+## libjwt version
+##   https://github.com/benmcollins/libjwt/archive
+LIBJWTVERS=1.13.1
+
+## Git hash for libsofia-sip 
+##   https://github.com/freeswitch/sofia-sip
+SOFIAHASH=fbab3b7b3d077105378585d75d61a0a9c6fb7a4e
+## What version and release we are claiming it is.
+SOFIAVERSION=1.13.4
+SOFIARELEASE=22
+
+## Git hash for freeswitch
+##   https://github.com/signalwire/freeswitch
+FSHASH=5c6fd51c115f4029926197095d436d527277c0e2
+## What version of freeswitch we are claiming it is
+FSVERSION=1.10.7
+## Download these dependancies before building. They're
+## mentioned in the spec file, so.. just do it!
+FSDEPS=v8-3.24.14.tar.bz2 mongo-c-driver-1.1.0.tar.gz pocketsphinx-0.8.tar.gz sphinxbase-0.8.tar.gz communicator_semi_6000_20080321.tar.gz libmemcached-0.32.tar.gz freeradius-client-1.1.7.tar.gz
+
+##
+## If you're adding new RPMS, add them here (after adding a new section below)
+RPMS=$(RPMBASE)/$(LIBJWTRPM) $(RPMBASE)/$(LIBKSRPM) $(RPMBASE)/$(LIBSSRPM) $(RPMBASE)/$(FSRPM)
+##
+##
+##########
+
+##########
+##
+## Wildcard match for all the sub-containers. If you added a new
+## container that needs rpms injected into it, add it here.
+##
+## This is here so you can put something like libksdocker/blah.foo.rpm as
+## a requirement, and blah.foo.rpm will be built if it needs to, and then
+## moved into place.
+##
+
+libksdocker/%.rpm libssdocker/%.rpm fsdocker/%.rpm: $(RPMBASE)/%.rpm
+	cp $(<) $(@)
+
+##
+##########
+
+##########
+## Other stuff you probably don't need to care about, unless
+## you're hacking on releases or something.
+##
 LIBSSSHORT = $(shell echo $(LIBSSHASH) | cut -c1-7)
 LIBSSFILENAME = libstirshaken-$(VERSION)-$(LIBSSSHORT).tar.gz
 LIBSSURL=https://github.com/signalwire/libstirshaken/tarball/$(LIBSSHASH)
@@ -24,7 +83,6 @@ LIBSSRPM=libstirshaken-$(VERSION)-$(RELEASE).el7.x86_64.rpm
 LIBSSDEVELRPM=libstirshaken-devel-$(VERSION)-$(RELEASE).el7.x86_64.rpm
 LIBSSDOCKERTAG=$(shell pwd)/.libss_docker_build
 
-LIBKSHASH=0b4a6e8181578ed9594cad536c11fb4e284a4849
 LIBKSSHORT = $(shell echo $(LIBKSHASH) | cut -c1-7)
 LIBKSFILENAME = libks-$(VERSION)-$(LIBKSSHORT).tar.gz
 LIBKSURL=https://github.com/signalwire/libks/tarball/$(LIBKSHASH)
@@ -38,59 +96,66 @@ LIBJWTDEVELRPM=libjwt-devel-$(LIBJWTVERS)-1.el7.x86_64.rpm
 LIBJWTFILE=libjwt-$(LIBJWTVERS).tar.gz
 LIBJWTURL=https://github.com/benmcollins/libjwt/archive/v$(LIBJWTVERS).tar.gz
 
-FSHASH=5c6fd51c115f4029926197095d436d527277c0e2
 FSURL=https://github.com/signalwire/freeswitch/tarball/$(FSHASH)
-FSVERSION=1.10.8
-FSRELEASE=$(VERSION).dev1
-FSSHORT = $(shell echo $(FSHASH) | cut -c1-7)
-FSBASEFILENAME = freeswitch-orig-$(VERSION)-$(FSSHORT).tar.gz
-FSFILENAME = freeswitch-$(VERSION)-$(FSSHORT).tar.gz
+FSSHORT=$(shell echo $(FSHASH) | cut -c1-7)
+FSRELEASE=$(VERSION).dev1.$(FSSHORT)
+FSBASEFILENAME=freeswitch-orig-$(VERSION)-$(FSSHORT).tar.gz
+FSFILENAME=freeswitch-$(VERSION)-$(FSSHORT).tar.gz
 FSPREFIX=signalwire-freeswitch-$(FSSHORT)
 FSDOCKERTAG=$(shell pwd)/.fs_docker_build
-FSEXTRADEFINE = -D 'release $(FSRELEASE)' -D 'version $(FSVERSION)' -D 'extracted $(FSPREFIX)' -D 'configure_options "LDFLAGS=-L/usr/lib64/openssl11"'
+FSEXTRADEFINE=-D 'release $(FSRELEASE)' -D 'version $(FSVERSION)' -D 'extracted $(FSPREFIX)' -D 'configure_options "LDFLAGS=-L/usr/lib64/openssl11"'
 FSPATCHES=$(notdir $(wildcard patches/freeswitch/*))
 FSRPM=freeswitch-$(FSVERSION)-$(FSRELEASE).el7.x86_64.rpm
 
-SOFIAHASH=fbab3b7b3d077105378585d75d61a0a9c6fb7a4e
 SOFIAURL=https://github.com/freeswitch/sofia-sip/tarball/$(SOFIAHASH)
 SOFIASHORT = $(shell echo $(SOFIAHASH) | cut -c1-7)
-SOFIAVERSION=1.13.4
-SOFIARELEASE=22
 SOFIAPREFIX=freeswitch-sofia-sip-$(SOFIASHORT)
 SOFIAFILENAME=$(SOFIAPREFIX).tar.gz
 SOFIARPM=sofia-sip-$(SOFIAVERSION)-$(SOFIARELEASE).el7.x86_64.rpm
+##
+##########
 
+##########
+## Automation and stuff in this section. Should all just work.
+##
 RPMBUILD=rpmbuild --define "_topdir /usr/local/build" -ba
 
-FSDEPS=v8-3.24.14.tar.bz2 mongo-c-driver-1.1.0.tar.gz pocketsphinx-0.8.tar.gz sphinxbase-0.8.tar.gz communicator_semi_6000_20080321.tar.gz libmemcached-0.32.tar.gz freeradius-client-1.1.7.tar.gz
+FSDEPDOWNLOAD=$(addprefix $(DOWNLOADS)/,$(FSDEPS))
+FSDEPDEST=$(addprefix $(RPMSOURCE)/,$(FSDEPS))
+FSPATCHESDEST=$(addprefix $(RPMSOURCE)/,$(FSPATCHES))
 
-FSDEPDEST=$(addprefix build/SOURCES/,$(FSDEPS))
-FSPATCHESDEST=$(addprefix build/SOURCES/,$(FSPATCHES))
+##
+##########
 
-RPMS=$(RPMBASE)/$(LIBJWTRPM) $(RPMBASE)/$(LIBKSRPM) $(RPMBASE)/$(LIBSSRPM)
+.PHONY: help shell setup rpms clean distclean
 
-.PHONY: shell setup rpms clean freeswitch
+help:
+	@echo "Instructions:"
+	@echo "  'make shell'     - gives you a shell in the fsbuilder container"
+	@echo "  'make rpms'      - build all rpms (into build/RPMS)"
+	@echo "  'make setup'     - Makes sure the clang container is ready"
+	@echo "  'make clean'     - Removes all packages and builds (except clang)"
+	@echo "  'make distclean' - Same as clean but also remove clang"
+	@echo "Container names:"
+	@echo "  'make clangcontainer'"
 
-test:
-	echo $(CLANGDOCKERTAG)
-
-shell: $(FSDOCKERTAG) build/SOURCES/$(FSFILENAME)
+shell: $(FSDOCKERTAG) $(RPMSOURCE)/$(FSFILENAME)
 	docker run --rm $(VOLUMES) -it fsbuilder:$(VERSION) bash
 
-setup: $(BUILDDIR) $(SOURCEDIR) /usr/local/ccache/ccache.conf build/SOURCES $(CLANGDOCKERTAG)
+rpms: setup $(RPMS)
+
+setup: $(CLANGDOCKERTAG) | /usr/local/ccache/ccache.conf $(RPMSOURCE) $(BUILDDIR) $(DOWNLOADS)
 
 clean:
-	rm -rf build $(LIBSSDOCKERTAG) $(CLANGDOCKERTAG) $(LIBKSDOCKERTAG) $(FSDOCKERTAG) freeswitch.spec
+	rm -rf build $(LIBSSDOCKERTAG) $(CLANGDOCKERTAG) $(LIBKSDOCKERTAG) $(FSDOCKERTAG) freeswitch.spec *tar.gz
+
+distclean: clean
+	rm -rf clangdocker/$(CLANGFILE)
 
 
-# Wildcard match for all the sub-containers
-libksdocker/%.rpm libssdocker/%.rpm fsdocker/%.rpm: $(RPMBASE)/%.rpm
-	cp $(<) $(@)
-
-
-#####
+##########
 # Common patterns
-build/SOURCES/%: %
+$(RPMSOURCE)/%: $(DOWNLOADS)/%
 	cp $(<) $(@)
 
 build/%.spec: %.spec
@@ -100,23 +165,25 @@ build/%.spec: %.spec
 	mkdir -p $(@D) && chmod 777 $(@D)
 	cp $(<) $(@)
 
-$(BUILDDIR) $(SOURCEDIR) $(RPMSOURCE):
+$(BUILDDIR) $(DOWNLOADS) $(RPMSOURCE):
 	mkdir -p $(@) && chmod 777 $(@)
 
-
 ##
-#####
+##########
 
-######
+##########
 ##
 ## Clang 12.0.0 base image
 ##
 
-.PHONY: clangcontainer
-clangcontainer: setup $(CLANGDOCKERTAG)
+.PHONY: clang
+clang: setup $(CLANGDOCKERTAG)
 
-clangdocker/$(CLANGFILE):
+$(DOWNLOADS)/$(CLANGFILE): | $(DOWNLOADS)
 	wget $(CLANGSRC) -O $(@)
+
+clangdocker/$(CLANGFILE): $(DOWNLOADS)/$(CLANGFILE)
+	cp $(<) $(@)
 
 $(CLANGDOCKERTAG): clangdocker/$(CLANGFILE) $(wildcard clangdocker/*)
 	@echo Starting $(@)
@@ -125,8 +192,7 @@ $(CLANGDOCKERTAG): clangdocker/$(CLANGFILE) $(wildcard clangdocker/*)
 
 ##
 ##
-##
-######
+##########
 
 
 ######
@@ -138,7 +204,7 @@ $(CLANGDOCKERTAG): clangdocker/$(CLANGFILE) $(wildcard clangdocker/*)
 .PHONY: libjwt
 libjwt: setup $(RPMBASE)/$(LIBJWTRPM)
 
-$(RPMSOURCE)/$(LIBJWTFILE): | $(RPMSOURCE)
+$(DOWNLOADS)/$(LIBJWTFILE): | $(DOWNLOADS)
 	wget $(LIBJWTURL) -O $(@)
 
 $(RPMBASE)/$(LIBJWTRPM): $(CLANGDOCKERTAG) $(RPMSOURCE)/$(LIBJWTFILE) build/libjwt.spec
@@ -155,15 +221,17 @@ $(RPMBASE)/$(LIBJWTRPM): $(CLANGDOCKERTAG) $(RPMSOURCE)/$(LIBJWTFILE) build/libj
 ## the libjwt and libjwt-devel RPMs from the previous build
 ##
 
-.PHONY: libks
+.PHONY: libks libks-shell
 libks: $(RPMBASE)/$(LIBKSRPM)
+libks-shell: $(LIBKSDOCKERTAG)
+	docker run --rm $(VOLUMES) -it libksbuilder:$(VERSION) bash
 
-$(LIBKSDOCKERTAG): libksdocker/$(LIBJWTRPM) libksdocker/$(LIBJWTDEVELRPM) $(wildcard libksdocker/*)
+$(LIBKSDOCKERTAG): $(CLANGDOCKERTAG) libksdocker/$(LIBJWTRPM) libksdocker/$(LIBJWTDEVELRPM) $(wildcard libksdocker/*)
 	@echo Starting $(@)
 	docker build --build-arg LIBJWT=$(LIBJWTRPM) --build-arg LIBJWTDEVEL=$(LIBJWTDEVELRPM) -t libksbuilder:$(VERSION) libksdocker
 	touch $(@)
 
-$(LIBKSFILENAME):
+$(DOWNLOADS)/$(LIBKSFILENAME):
 	wget $(LIBKSURL) -O $(@)
 
 build/libks.spec: libks.spec
@@ -192,7 +260,10 @@ $(LIBSSDOCKERTAG): libssdocker/$(LIBKSRPM) $(wildcard libssdocker/*)
 	docker build --build-arg LIBKS=$(LIBKSRPM) --build-arg VERSION=$(VERSION) -t libssbuilder:$(VERSION) libssdocker
 	touch $(@)
 
-$(LIBSSFILENAME):
+x:
+	echo $(LIBSSDEVELRPM)
+
+$(DOWNLOADS)/$(LIBSSFILENAME):
 	wget $(LIBSSURL) -O $(@)
 
 build/libstirshaken.spec: libstirshaken.spec
@@ -215,13 +286,13 @@ $(RPMBASE)/$(LIBSSRPM): $(LIBSSDOCKERTAG) $(RPMSOURCE)/$(LIBSSFILENAME) build/li
 .PHONY: libsofia
 libsofia: setup $(RPMBASE)/$(SOFIARPM)
 
-$(SOFIAFILENAME):
+$(DOWNLOADS)/$(SOFIAFILENAME):
 	wget -nc -O $(@) $(SOFIAURL)
 
 build/sofia-sip.spec: sofia-sip.spec
 	sed -e 's/__SOFIAVERSION__/$(SOFIAVERSION)/' -e 's/__SOFIARELEASE__/$(SOFIARELEASE)/' -e 's/__SOFIASOURCE__/$(SOFIAFILENAME)/' -e 's/__SOFIAPREFIX__/$(SOFIAPREFIX)/' $< > $(@)
 
-$(RPMBASE)/$(SOFIARPM): $(LIBSSDOCKERTAG) build/sofia-sip.spec build/SOURCES/$(SOFIAFILENAME)
+$(RPMBASE)/$(SOFIARPM): $(LIBSSDOCKERTAG) build/sofia-sip.spec $(RPMSOURCE)/$(SOFIAFILENAME)
 	docker run --rm $(VOLUMES) -it libssbuilder:$(VERSION) $(RPMBUILD) sofia-sip.spec
 
 ##
@@ -232,16 +303,20 @@ $(RPMBASE)/$(SOFIARPM): $(LIBSSDOCKERTAG) build/sofia-sip.spec build/SOURCES/$(S
 #####
 ## Freeswitch. Finally!
 
-.PHONY: freeswitch
+.PHONY: freeswitch freeswitch-dep freeswitch-shell
 freeswitch: setup $(RPMBASE)/$(FSRPM)
+freeswitch-dep: $(FSDEPDEST)
+freeswitch-shell: $(FSDOCKERTAG)
+	docker run --rm $(VOLUMES) -it fsbuilder:$(VERSION) bash
 
 ## This is generated by a script, taking the source spec file and
 ## patching it
-freeswitch.spec: $(FSFILENAME) $(FSPATCHESDEST) $(FSDEPDEST) $(shell pwd)/gen-freeswitchspec.sh
-	$(shell pwd)/gen-freeswitchspec.sh $(<) $(FSVERSION)
+build/freeswitch.spec: $(RPMSOURCE)/$(FSFILENAME) $(FSPATCHESDEST) $(FSDEPDEST) $(shell pwd)/gen-freeswitchspec.sh
+	$(shell pwd)/gen-freeswitchspec.sh $(DOWNLOADS)/$(FSFILENAME) $(FSVERSION)
+	cp freeswitch.spec $(@)
 
-## This is a list of the freeswitch dependancies to download
-$(FSDEPDEST):
+## This is a list of the freeswitch dependancies to download.
+$(FSDEPDOWNLOAD): | $(DOWNLOADS)
 	wget -nc -O $(@) http://files.freeswitch.org/downloads/libs/$(@F)
 	
 ## Some makefile magic to glob all the freeswitch patches into place
@@ -251,7 +326,7 @@ $(FSPATCHESDEST): patches/freeswitch/$$(@F)
 
 ## This is the raw file, from github. autoconf/bootstrap needs to be
 ## run against it.
-$(FSBASEFILENAME): $(FSDOCKERTAG)
+$(DOWNLOADS)/$(FSBASEFILENAME):
 	wget -O $(@) $(FSURL)
 
 ## Build our freeswitch building container. We add libss and libsofia to the libssbuilder
@@ -270,18 +345,18 @@ $(FSDOCKERTAG): fsdocker/$(LIBSSRPM) fsdocker/$(LIBSSDEVELRPM) fsdocker/$(SOFIAR
 ## grabbing the raw code from github, running bootstrap in it, and then
 ## packaging it back up
 
-## This is the 'real' source package, after autoconf/bootstrap.sh has been run in it
-$(FSFILENAME): build/autoconf/$(FSPREFIX)/Makefile.in
+## This is the 'real' source package, after autoconf/bootstrap.sh has been run in it.
+$(DOWNLOADS)/$(FSFILENAME): build/autoconf/$(FSPREFIX)/Makefile.in
 	tar -C build/autoconf -cf $(@) $(FSPREFIX)
 
 ## Pull down BASEFILENAME (from github), extract it and use the fsbuilder container
 ## to run boostrap.
-build/autoconf/$(FSPREFIX)/Makefile.in: $(FSBASEFILENAME)
+build/autoconf/$(FSPREFIX)/Makefile.in: $(DOWNLOADS)/$(FSBASEFILENAME) $(FSDOCKERTAG)
 	mkdir -p build/autoconf && tar -C build/autoconf -xf $<
 	docker run --rm $(VOLUMES) -w /usr/local/build/autoconf/$(FSPREFIX) -it fsbuilder:$(VERSION) ./bootstrap.sh -j
 
 ## And now we can finally build all the RPMS.
-$(RPMBASE)/$(FSRPM): build/SOURCES/$(FSFILENAME) build/freeswitch.spec | $(FSDOCKERTAG)
+$(RPMBASE)/$(FSRPM): $(FSDEPDEST) $(RPMSOURCE)/$(FSFILENAME) build/freeswitch.spec | $(FSDOCKERTAG)
 	docker run --rm $(VOLUMES) -it fsbuilder:$(VERSION) $(RPMBUILD) $(FSEXTRADEFINE) freeswitch.spec
 
 ##
