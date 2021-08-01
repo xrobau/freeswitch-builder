@@ -47,7 +47,7 @@ sed -ri '/^if test -f bootstrap.sh/iexport PATH=/usr/lib64/ccache${PATH:+:${PATH
 sed -ri 's/^(.+devtoolset.+enable)$/# Already enabled\n# \1/' $SPECFILE
 
 # Fix -release
-sed -ri '/^%setup/a sed -ir "s/-(release|dev)/-\%{releasename}/" ./configure.ac' $SPECFILE
+sed -ri '/^%setup/a sed -ir "s/-(release|dev)/-\%{release}/" ./configure.ac' $SPECFILE
 
 SRCPATCHES=$(echo patches/freeswitch/*)
 COUNT=1

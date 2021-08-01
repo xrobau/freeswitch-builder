@@ -48,6 +48,10 @@ FSVERSION=1.10.7
 ## mentioned in the spec file, so.. just do it!
 FSDEPS=pocketsphinx-0.8.tar.gz sphinxbase-0.8.tar.gz communicator_semi_6000_20080321.tar.gz freeradius-client-1.1.7.tar.gz
 
+## This is what we're tagging the rpm as. You probably want
+## to change 'dev2' to something else.
+FSRELEASE=$(VERSION).dev2.$(FSSHORT)
+
 ##
 ## If you're adding new RPMS, add them here (after adding a new section below)
 RPMS=$(RPMBASE)/$(LIBJWTRPM) $(RPMBASE)/$(LIBKSRPM) $(RPMBASE)/$(LIBSSRPM) $(RPMBASE)/$(FSRPM)
@@ -65,7 +69,7 @@ RPMS=$(RPMBASE)/$(LIBJWTRPM) $(RPMBASE)/$(LIBKSRPM) $(RPMBASE)/$(LIBSSRPM) $(RPM
 ## moved into place.
 ##
 
-libksdocker/%.rpm libssdocker/%.rpm fsdocker/%.rpm: $(RPMBASE)/%.rpm
+testdocker/%.rpm libksdocker/%.rpm libssdocker/%.rpm fsdocker/%.rpm: $(RPMBASE)/%.rpm
 	cp $(<) $(@)
 
 ##
@@ -75,43 +79,45 @@ libksdocker/%.rpm libssdocker/%.rpm fsdocker/%.rpm: $(RPMBASE)/%.rpm
 ## Other stuff you probably don't need to care about, unless
 ## you're hacking on releases or something.
 ##
+
+RPMSUFFIX=el7.x86_64.rpm
+
 LIBSSSHORT = $(shell echo $(LIBSSHASH) | cut -c1-7)
 LIBSSFILENAME = libstirshaken-$(VERSION)-$(LIBSSSHORT).tar.gz
 LIBSSURL=https://github.com/signalwire/libstirshaken/tarball/$(LIBSSHASH)
 LIBSSPREFIX=signalwire-libstirshaken-$(LIBSSSHORT)
-LIBSSRPM=libstirshaken-$(VERSION)-$(RELEASE).el7.x86_64.rpm
-LIBSSDEVELRPM=libstirshaken-devel-$(VERSION)-$(RELEASE).el7.x86_64.rpm
+LIBSSRPM=libstirshaken-$(VERSION)-$(RELEASE).$(RPMSUFFIX)
+LIBSSDEVELRPM=libstirshaken-devel-$(VERSION)-$(RELEASE).$(RPMSUFFIX)
 LIBSSDOCKERTAG=$(shell pwd)/.libss_docker_build
 
 LIBKSSHORT = $(shell echo $(LIBKSHASH) | cut -c1-7)
 LIBKSFILENAME = libks-$(VERSION)-$(LIBKSSHORT).tar.gz
 LIBKSURL=https://github.com/signalwire/libks/tarball/$(LIBKSHASH)
-LIBKSRPM=libks-$(VERSION)-$(RELEASE).el7.x86_64.rpm
+LIBKSRPM=libks-$(VERSION)-$(RELEASE).$(RPMSUFFIX)
 LIBKSPREFIX=signalwire-libks-$(LIBKSSHORT)
 LIBKSDOCKERTAG=$(shell pwd)/.libks_docker_build
 
 LIBJWTVERS=1.13.1
-LIBJWTRPM=libjwt-$(LIBJWTVERS)-1.el7.x86_64.rpm
-LIBJWTDEVELRPM=libjwt-devel-$(LIBJWTVERS)-1.el7.x86_64.rpm
+LIBJWTRPM=libjwt-$(LIBJWTVERS)-1.$(RPMSUFFIX)
+LIBJWTDEVELRPM=libjwt-devel-$(LIBJWTVERS)-1.$(RPMSUFFIX)
 LIBJWTFILE=libjwt-$(LIBJWTVERS).tar.gz
 LIBJWTURL=https://github.com/benmcollins/libjwt/archive/v$(LIBJWTVERS).tar.gz
 
 FSURL=https://github.com/signalwire/freeswitch/tarball/$(FSHASH)
 FSSHORT=$(shell echo $(FSHASH) | cut -c1-7)
-FSRELEASE=$(VERSION).dev1.$(FSSHORT)
 FSBASEFILENAME=freeswitch-orig-$(VERSION)-$(FSSHORT).tar.gz
 FSFILENAME=freeswitch-$(VERSION)-$(FSSHORT).tar.gz
 FSPREFIX=signalwire-freeswitch-$(FSSHORT)
 FSDOCKERTAG=$(shell pwd)/.fs_docker_build
 FSEXTRADEFINE=-D 'release $(FSRELEASE)' -D 'version $(FSVERSION)' -D 'extracted $(FSPREFIX)' -D 'configure_options "LDFLAGS=-L/usr/lib64/openssl11"'
 FSPATCHES=$(notdir $(wildcard patches/freeswitch/*))
-FSRPM=freeswitch-$(FSVERSION)-$(FSRELEASE).el7.x86_64.rpm
+FSRPM=freeswitch-$(FSVERSION)-$(FSRELEASE).$(RPMSUFFIX)
 
 SOFIAURL=https://github.com/freeswitch/sofia-sip/tarball/$(SOFIAHASH)
 SOFIASHORT = $(shell echo $(SOFIAHASH) | cut -c1-7)
 SOFIAPREFIX=freeswitch-sofia-sip-$(SOFIASHORT)
 SOFIAFILENAME=$(SOFIAPREFIX).tar.gz
-SOFIARPM=sofia-sip-$(SOFIAVERSION)-$(SOFIARELEASE).el7.x86_64.rpm
+SOFIARPM=sofia-sip-$(SOFIAVERSION)-$(SOFIARELEASE).$(RPMSUFFIX)
 ##
 ##########
 
@@ -138,6 +144,7 @@ help:
 	@echo "  'make distclean' - Same as clean but also remove clang"
 	@echo "Container names:"
 	@echo "  'make clangcontainer'"
+	@echo "  'make test'"
 
 shell: $(FSDOCKERTAG) $(RPMSOURCE)/$(FSFILENAME)
 	docker run --rm $(VOLUMES) -it fsbuilder:$(VERSION) bash
@@ -331,7 +338,7 @@ $(DOWNLOADS)/$(FSBASEFILENAME):
 
 ## These are all the libsofia rpms we add. I add them all because why not?
 SOFIAPMREQS=devel glib glib-devel utils
-SOFIAREQS=$(addprefix fsdocker/,$(addsuffix -$(SOFIAVERSION)-$(SOFIARELEASE).el7.x86_64.rpm,sofia-sip $(addprefix sofia-sip-,$(SOFIAPMREQS))))
+SOFIAREQS=$(addprefix fsdocker/,$(addsuffix -$(SOFIAVERSION)-$(SOFIARELEASE).$(RPMSUFFIX),sofia-sip $(addprefix sofia-sip-,$(SOFIAPMREQS))))
 
 $(FSDOCKERTAG): fsdocker/$(LIBSSRPM) fsdocker/$(LIBSSDEVELRPM) fsdocker/$(SOFIARPM) $(SOFIAREQS) $(wildcard fsdocker/*)
 	@echo Starting $(@)
@@ -360,4 +367,30 @@ $(RPMBASE)/$(FSRPM): $(FSDEPDEST) $(RPMSOURCE)/$(FSFILENAME) build/freeswitch.sp
 ##
 ##
 #####
+
+#####
+##
+##
+TESTDOCKERTAG=$(shell pwd)/.test_docker_build
+TESTPREFIX=freeswitch
+TESTSUFFIX=-$(FSVERSION)-$(FSRELEASE).$(RPMSUFFIX)
+FSTESTPKGS=lua application-httapi database-mariadb application-directory event-json-cdr application-limit xml-cdr application-lcr application-nibblebill format-native-file xml-curl application-db lang-en application-curl application-hash format-local-stream
+TESTRPMS=$(TESTPREFIX)$(TESTSUFFIX) $(addsuffix $(TESTSUFFIX),$(addprefix freeswitch-,$(FSTESTPKGS)))
+TESTRPMSDEST=$(addprefix testdocker/,$(TESTRPMS))
+
+.PHONY: test
+test: $(TESTDOCKERTAG) build/install.sh
+	docker run --rm $(VOLUMES) -it testdocker:$(VERSION) bash
+
+testdocker/fs.tar.gz: fs.tar.gz
+	cp $@ $<
+
+fs.tar.gz:
+	@echo You need to create fs.tar.gz somehow. Tar up /etc/freeswitch or something
+	@exit 1
+
+$(TESTDOCKERTAG): testdocker/fs.tar.gz $(RPMBASE)/$(FSRPM) $(TESTRPMSDEST) $(wildcard testdocker/*)
+	@echo Starting $(@)
+	docker build --build-arg VERSION=$(VERSION) --build-arg FREESWITCH=$(FSVERSION)-$(FSRELEASE).$(RPMSUFFIX) -t testdocker:$(VERSION) testdocker
+	touch $(@)
 
