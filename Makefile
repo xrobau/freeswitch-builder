@@ -374,7 +374,7 @@ $(RPMBASE)/$(FSRPM): $(FSDEPDEST) $(RPMSOURCE)/$(FSFILENAME) build/freeswitch.sp
 TESTDOCKERTAG=$(shell pwd)/.test_docker_build
 TESTPREFIX=freeswitch
 TESTSUFFIX=-$(FSVERSION)-$(FSRELEASE).$(RPMSUFFIX)
-FSTESTPKGS=lua application-httapi database-mariadb application-directory event-json-cdr application-limit xml-cdr application-lcr application-nibblebill format-native-file xml-curl application-db lang-en application-curl application-hash format-local-stream
+FSTESTPKGS=lua application-httapi database-mariadb application-directory event-json-cdr application-limit xml-cdr application-lcr application-nibblebill format-native-file xml-curl application-db lang-en application-curl application-hash format-local-stream debuginfo
 TESTRPMS=$(TESTPREFIX)$(TESTSUFFIX) $(addsuffix $(TESTSUFFIX),$(addprefix freeswitch-,$(FSTESTPKGS)))
 TESTRPMSDEST=$(addprefix testdocker/,$(TESTRPMS))
 
